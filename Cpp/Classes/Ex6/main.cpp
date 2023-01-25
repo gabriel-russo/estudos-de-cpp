@@ -46,5 +46,7 @@ int main() {
     s->printRectangle();
     s->printShape();
 
+    delete s;
+
     return 0;
 }

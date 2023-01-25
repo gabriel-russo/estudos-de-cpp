@@ -258,5 +258,11 @@ int main() {
     h->info();
     cout << "========================" << "\n";
 
+    delete f;
+    delete a;
+
+    delete y;
+    delete h;
+
     return 0;
 }

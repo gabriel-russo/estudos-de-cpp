@@ -68,5 +68,8 @@ int main() {
     e->printSalary();
     m->printSalary();
 
+    delete e;
+    delete m;
+
     return 0;
 }

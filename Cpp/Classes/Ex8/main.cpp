@@ -30,5 +30,8 @@ int main() {
     p1->print();
     p2->print();
 
+    delete p1;
+    delete p2;
+
     return 0;
 }
