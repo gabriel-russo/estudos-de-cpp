@@ -10,12 +10,15 @@ Write a program by creating an 'Employee' class having the following functions a
 class Employee {
 private:
     float salary;
-    uint16_t work_hours_per_day;
+    unsigned short int work_hours_per_day;
 public:
-    Employee(float salary, uint16_t work_hours_per_day) : salary(salary), work_hours_per_day(work_hours_per_day) {}
+    Employee(float salary,
+             unsigned short int work_hours_per_day
+    ) : salary(salary), work_hours_per_day(work_hours_per_day) {}
 
     void getInfo() {
-        std::cout << "Salário: " << this->salary << " || Horas trabalhadas por dia: " << this->work_hours_per_day << "\n";
+        std::cout << "Salário: " << this->salary << " || Horas trabalhadas por dia: " << this->work_hours_per_day
+                  << "\n";
     }
 
     void addSal() {

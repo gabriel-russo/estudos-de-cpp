@@ -20,12 +20,12 @@ making an object of both of these classes and print the same.
 class Member {
 private:
     string name;
-    uint16_t age;
+    unsigned short int age;
     string phone;
     string address;
     float salary;
 public:
-    Member(string name, uint16_t age, string phone, string address, float salary)
+    Member(string name, unsigned short int age, string phone, string address, float salary)
             : name(name), age(age), phone(phone), address(address), salary(salary) {}
 
     void printSalary() {
@@ -37,7 +37,7 @@ class Employee : public Member {
 private:
     string specialization;
 public:
-    Employee(string name, uint16_t age, string phone, string address, float salary, string espec)
+    Employee(string name, unsigned short int age, string phone, string address, float salary, string espec)
             : Member(name, age, phone, address, salary), specialization(espec) {}
 };
 
@@ -45,7 +45,7 @@ class Manager : public Member {
 private:
     string department;
 public:
-    Manager(string name, uint16_t age, string phone, string address, float salary, string dept)
+    Manager(string name, unsigned short int age, string phone, string address, float salary, string dept)
             : Member(name, age, phone, address, salary), department(dept) {}
 };
 
