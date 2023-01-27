@@ -82,19 +82,78 @@ O ato de separar o diretório de build do source é uma boa prática, pois abre 
 
 ## Prática
 
-Este comando deve ser o primeiro, pois especifica a versão mínima do cmake para o projeto, evitando problemas de
-compatibilidade de comandos.
+O CMake possui sua própria linguagem, assim como qualquer outra que um programador pode encontrar na natureza,
+possuindo variáveis, funções, macros, lógica de condicionais,loops, comentários e etc.
 
-```cmake 
-cmake_minimum_required(VERSION 3.10)
+Um CMakeLists.txt mínimo para gerar um executável simples fica assim:
+
+```cmake
+cmake_minimum_required(VERSION 3.2)
+project(MeuApp)
+add_executable(myBin main.cpp)
 ```
 
----
-Define o nome do projeto, como também outras informações como versão e linguagem
+Cada linha executa um comando do CMake, se parecendo mais como funções em outras linguagens, aceitando argumentos
+mas não retornando nenhum valor. Cada argumento é separado por espaços e pode ser escrito em multiplas linhas
+
+```cmake
+add_executable(
+        myBin
+        main.cpp
+        src1.cpp
+        src2.cpp
+)
+```
+
+Os comandos são case insensitive, mas a convensão é se escrever tudo minúsculo.
+
+O primeiro comando dita qual versão do cmake o projeto está usando, quando mais novo ele for mais funcionalidades ele
+vai ter. Dessa forma, o comando: `cmake_minimum_required()` **DEVE SER O PRIMEIRO NO ARQUIVO**, pois ele especifica
+quais comandos
+estão disponíveis e verifica no CMakeLists.txt
+
+```cmake
+cmake_minimum_required(VERSION major.minor[.patch[.tweak]])
+```
+
+O comando DEVE ter a palavra-chave VERSION, para especificar a versão passada por parâmetro. Nesse comando o
+estritamente necessário é apenas preencher o major e o minor, como por exemplo: 3.1, 3.2, 3.15...
+
+O segundo comando especifica mais os "metadados" do projeto, como nome, versão e linguagem usada (para a configuração do
+compilador)
 
 ```cmake 
-project(Tutorial VERSION 1.5)
+project(NomeDoProjeto
+        [VERSION major[.minor[.patch[.tweak]]]]
+        [LANGUAGES linguagem ...]
+        )
 ```
+
+- NomeDoProjeto : O nome do projeto deve somente conter letras, numeros, underline (_), e hífens (-),
+  mas tipicamente usa-se apenas letras junto com underlines. Ele é usado na maioria das vezes como uma especie de
+  identificador do projeto.
+- VERSION: Funciona apenas com a versão do cmake >= 3.0, assim como o nome do projeto, é usado para popular algumas
+  variáveis e metadados, mas é um bom habito utiliza-lo para ajudar no versionamento do projeto.
+- LANGUAGES: Define as linguagens de programação habilitadas no projeto. Os valores suportados incluem:
+  `C`, `CXX`, `Fortran`,`ASM`,`Java` e entre outros. Você pode definir uma ou mais linguagens (separando-os por
+  espaços),
+  e até especificar nenhuma, utilizando `LANGUAGES NONE`.
+
+O terceiro comando faz com que o CMake crie um executável a partir de uma lista de códigos fontes, e sua sintaxe básica
+é:
+
+```cmake
+add_executable(nomeDoBin source1 [source 2...])
+```
+
+Isso faz com que gere um executável com o nome especificado no <nomeDoBin> (O CMake chama de target). Quando o projeto é
+buildado, o executávei vai aparecer no diretório de build. Esse binário é dependente da plataforma, então em uma
+plataforma windows se chamaria nomeDoBin.exe por exemplo. Esse executável pode ser chamado várias vezes no projeto com
+nomes diferentes para criar outros targets, se tiver dois nomes iguais vai dar erro.
+
+O autor fala que é uma boa prática sempre verificar a versão disponível para a plataforma que você irá desenvolver,
+e especificando-o no `cmake_minimum_required()`. Além disso, deve também considerar manter atualizado a versão correta
+no `project()`.
 
 ---
 Define valores de variáveis
