@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ContaBancaria.h"
+#include "Bancaria.hpp"
 
 class ContaPoupanca : public ContaBancaria {
 private:

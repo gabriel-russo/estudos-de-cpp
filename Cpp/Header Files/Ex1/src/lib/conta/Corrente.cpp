@@ -1,4 +1,4 @@
-#include "ContaCorrente.h"
+#include "Corrente.hpp"
 
 ContaCorrente::ContaCorrente(int num_conta,
                              float saldo,
