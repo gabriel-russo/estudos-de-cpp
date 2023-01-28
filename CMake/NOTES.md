@@ -155,6 +155,139 @@ O autor fala que é uma boa prática sempre verificar a versão disponível para
 e especificando-o no `cmake_minimum_required()`. Além disso, deve também considerar manter atualizado a versão correta
 no `project()`.
 
+Para problemas mais complexos, normalmente utiliza-se bibliotecas de terceiros ou de produção caseira, com isso, somente
+com esses três comandos apresentados não vai conseguir ir muito longe. Vamos partir do final do último exemplo:
+
+```cmake
+add_executable(meuBin [WIN32] [MACOSX_BUNDLE] [EXCLUDE_FROM_ALL] source1 [source2 ...])
+```
+
+Para ser mais específico no seu binário, deve especificar a plataforma que irá usar.
+
+- WIN32: Quando for criar um executável para windows, esse opção irá te ajudar criando um entry point mais específico,
+  o `WinMain()`. E além de criar um link com a opção `/SUBSYSTEM:WINDOWS`.
+- MACOSX_BUNDLE: Essa opção faz com que o CMake faça a build direcionada aos produtos Apple, não só pro macos, mas para
+  o iOS também. Além de gerar arquivos específicos para o funcionamento nos sistemas da apple.
+- EXCLUDE_FROM_ALL: É o ao contrário do default `ALL` (caso nenhum desses acima for usado), o executável apenas vai ser
+  buildado se for chamado através do comando de build ou algum outro binario que depende dele for criado.
+  Assim como o nome já deixa explícito, não vai fazer nenhuma build para nenhuma plataforma específica.
+
+Para definir as bibliotecas (targets) é necessário usar o comando `add_library()`.
+
+```cmake
+add_library(libAlvo [STATIC | SHARED | MODULE] [EXCLUDE_FROM_ALL] source1 [source 2 ...])
+```
+
+Esse comando tem o mesmo sentido do add_executable, você define o alvo (esse nome vai ser como se fosse um identificador
+dessa biblioteca dentro do CMakeLists.txt), o seu "tipo" e os arquivos fontes necessários para cria-lo.
+
+- STATIC: Especifica que é uma biblioteca statica, no windows ele vai se tornar: libAlvo.lib, e em plataformas Unix-like
+  irá ser libAlvo.a
+
+> Uma "static library" ou biblioteca estática é um conjunto de código compilado que pode ser ligado a um programa
+> durante a etapa de linkagem. Isso significa que todas as funções e dados da biblioteca estática são copiados para o
+> executável final, e esse código fica embutido no programa. Dessa forma, o programa não precisa de referência externa
+> para a biblioteca, ele já possui todas as informações necessárias dentro dele. Isso torna o programa auto-suficiente e
+> pode ser executado em qualquer sistema operacional, sem a necessidade de instalação de biblioteca adicional.
+
+- SHARED: Especifica uma biblioteca que é dinamica/compartilhada. No Windows as bibliotecas compartilhadas tem o nome de
+  libAlvo.dll, em plataformas Apple tem o nome de libAlvo.dylib e nos sistemas Unix-like geralmente tem o nome de
+  libAlvo.so
+
+> Uma "shared library" ou biblioteca dinâmica é um conjunto de código compilado que pode ser carregado em tempo de
+> execução. Isso significa que o programa não copia todas as funções e dados da biblioteca para si mesmo, mas ao invés
+> disso, ele apenas contém uma referência para a biblioteca e a carrega em tempo de execução. Dessa forma, o tamanho do
+> programa final é menor, já que ele não precisa incluir todo o código da biblioteca. No entanto, essa abordagem requer
+> que a biblioteca esteja disponível no sistema operacional onde o programa está sendo executado, caso contrário, o
+> programa não irá funcionar.
+
+- MODULE: Especifica que a biblioteca é como se fosse um shared, mas vai ser carregada dinamicamente durante o runtime,
+  e não no processo de linkagem na compilação. Esse tipo geralmente é usado para plugins ou componentes opcionais que
+  são
+  escolhidos se são carregados ou não.
+
+Quando está adicionando essas bibliotecas, começa a ter o famoso "inferno das dependencias", onde uma biblioteca precisa
+de outra para funcionar. Dessa forma, é necessário fazer o link dessas bibliotecas e indicar qual a relação que cada uma
+tem com cada uma. Então, utiliza-se o comando abaixo:
+
+```cmake
+target_link_libraries(nomeDoAlvo
+        <PRIVATE|PUBLIC|INTERFACE> lib1 [lib2 ....]
+        [<PRIVATE|PUBLIC|INTERFACE> lib3 [lib4 ...]]
+        ...
+        )
+```
+
+De exemplo vai ser usado duas bibliotecas: A e B.
+
+- PRIVATE: Dependência privada especifica que a biblioteca A usa a biblioteca B em sua implementação interna, mas quem
+  fazer o link com a biblioteca A não precisa saber nada sobre a biblioteca B pois não interfere em nada.
+
+- PUBLIC: Dependência publica especifica que não só a biblio A usa a biblio B internamente, mas também usa a biblio B
+  na sua interface, isso significa que você não pode usar a biblio A sem precisar da biblio B. Então quem linkar com
+  A vai depender também de B. Um exemplo dessa situação é quando uma função da biblio A usa um objeto que foi definido e
+  implementado na biblio B e usa como parâmetro.
+
+- INTERFACE: Dependência interface especifica que, para usar a biblio A, parte da biblio B tem que ser usada. É
+  diferente do publico pois a biblio A não precisa do B internamente, apenas usa B como interface. Um Exemplo dessa
+  situação seria quando você usa uma biblioteca que é headers-only como dependencia.
+
+> Uma biblioteca "headers-only" é uma biblioteca de software que consiste apenas de arquivos de cabeçalho (headers) e
+> não contém arquivos de implementação (como arquivos ".cpp"). Isso significa que, ao usar essa biblioteca, você
+> precisará
+> incluir os arquivos de cabeçalho correspondentes em seu código-fonte, mas não precisará vincular qualquer arquivo de
+> objeto ou biblioteca específica.
+>
+>As bibliotecas headers-only são comuns em C++ devido ao seu modelo de linguagem de
+> programação baseado em templates. Os templates são uma forma de programação genérica, que permite escrever código que
+> pode ser usado com diferentes tipos de dados. Dessa forma, os templates são compilado junto ao código que os usa,
+> então não é necessário uma biblioteca separada para os arquivos de objeto.
+
+```cmake
+add_library(collector src1.cpp) # Criando um target biblioteca collector
+add_library(algo src2.cpp) # Criando um target biblioteca algo
+add_library(engine src3.cpp) # Criando um target biblioteca engine
+add_library(ui src4.cpp) # Criando um target biblioteca ui
+add_executable(myApp main.cpp) # Criando um target myApp
+
+target_link_libraries(collector # Criando o relacio. de dependência
+        PUBLIC ui
+        PRIVATE algo engine
+        )
+# Leitura: A biblioteca collector tem uma dependência publica com ui, então o target myApp
+# vai ser linkado tanto com collector quanto ui. Além disso a biblio collector tem uma relação
+# privada com algo e engine, então myApp não vai ser linkado diretamente com eles, pois são usados
+# internamente por collector e não interessa saber da existencia desses dois.
+
+target_link_libraries(myApp PRIVATE collector) # E por fim faz o link da dependencia do myApp 
+# com o collector, então quem se linkar futuramente com myApp não tem q se preocupar com collector.
+```
+
+Além disso, você pode usar o `target_link_libraries()` de várias outras formas, como:
+
+- Caminho completo para uma lib: `/usr/lib/libfoo.so`
+
+- Nome da lib: `libfoo.lib`, dessa forma o linker vai procurar por essa biblioteca
+
+- Como uma flag para o Linker: Você inicia com o hífen, como por exe `-lfoo`, dessa forma se parece como se
+  tivesse passando manuelmente pro compilador as libs.
+
+```text
+Manual do GCC:
+-llibrary
+-l library
+    Procura a biblioteca com base no nome na fase de linking. [...] 
+    A opção é passada diretamente para o linker pelo GCC. [...]
+    O linker procura na lista padrão de diretórios pela biblioteca. [...]
+```
+
+O Autor fala que, quando está nomeando o nome do target das bibliotecas, evitar começar ou terminar
+com "lib", pois em algumas plataformas o lib é colocado automaticamente quando está construindo a biblio, então
+pode ficar: `liblibfoo.<dll|so|lib|a>`.
+
+Além disso ele fala que: SEMPRE, especifique a relação da biblioteca (PRIVATE, PUBLIC ...),
+pois em projetos maiores essas keywords tem um enorme impacto.
+
 ---
 Define valores de variáveis
 
