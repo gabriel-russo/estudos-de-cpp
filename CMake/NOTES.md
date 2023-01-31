@@ -269,8 +269,8 @@ Além disso, você pode usar o `target_link_libraries()` de várias outras forma
 
 - Nome da lib: `libfoo.lib`, dessa forma o linker vai procurar por essa biblioteca
 
-- Como uma flag para o Linker: Você inicia com o hífen, como por exe `-lfoo`, dessa forma se parece como se
-  tivesse passando manuelmente pro compilador as libs.
+- Como uma flag para o Linker: Você inicia com o hífen, como por exe `-lfoo`, dessa forma se parece como se tivesse
+  passando as libs manuelmente pro compilador.
 
 ```text
 Manual do GCC:
@@ -288,71 +288,225 @@ pode ficar: `liblibfoo.<dll|so|lib|a>`.
 Além disso ele fala que: SEMPRE, especifique a relação da biblioteca (PRIVATE, PUBLIC ...),
 pois em projetos maiores essas keywords tem um enorme impacto.
 
----
-Define valores de variáveis
+As variáveis são muito importante para o CMake assim como em qualquer outra linguagem de programação, pois só com elas
+que podemos moldar o produto final como queremos.
+
+Para definir uma variável no cmake, utiliza-se esse comando no CMakeLists.txt:
 
 ```cmake 
-set(<variavel> <valor>)
+set(MinhaVar <valor>... [PARENT_SCOPE])
 ```
 
-Variáveis com esse sufixo indica que são variáveis especiais do CMake:
+O nome da variável deve seguir a mesma regra que em outras linguagens: pode conter letras, números e underlines (_), não
+pode começar com número ou caractere especial e etc.
 
-`CMAKE_`
+O nome das variávels são case-sensitive.
 
-Define a versão do c++
+Sobre o `PARENT_SCOPE`: As variáveis possuem um escopo em particular assim como a variável de outras linguagens,
+limitando-se a funções, arquivos e etc, dessa forma, não podendo ser modifcada fora do escopo. Mais detalhes sobre isso
+vai ser tratado mais para frente no capítulo 7.
 
-```cmake 
-set(CMAKE_CXX_STANDARD 11)
-```
+O Cmake trata toda as variáveis como strings. Em outros contextos as variáveis podem ser interpretadas como outros
+tipos, mas em sua essência são apenas strings. Quando está criando uma variável com o `set()`, os valores não precisam
+de aspas, a não ser que o valor precise de espaços internamente. Se vários valores forem passados por parâmetro, os
+valores vão ser agrupados em uma string e separados por ponto e vírgula, pois é assim q o CMake representa listas.
 
-A variável CMAKE_CXX_STANDARD é tratada como requerimento para a build ser feita com sucesso
+Alguns exemplos do uso do `set()`:
 
 ```cmake
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(MinhaVar a b c)    # MinhaVar = "a;b;c"
+set(MinhaVar a;b;c)    # MinhaVar = "a;b;c"
+set(MinhaVar "a b c")  # MinhaVar = "a b c"
+set(MinhaVar a b;c)    # MinhaVar = "a;b;c"
+set(MinhaVar a "b c")  # MinhaVar = "a;b c"
 ```
 
----
-Esse comando faz a substituição de valores de variável dentro de um arquivo a partir das variáveis dentro do CMake.
+Para pegar os valores de uma váriavel utiliza o operador de expansão `${ <nome da variavel> }`, o CMake é bem flexível
+com a utilização desse operador, você pode utilizar esse operador junto com outros recursivamente. Caso utilize com uma
+variável que não existe, apenas retornará uma string vazia.
 
-```cmake 
-configure_file(<input com as variaveis a serem substituidas> <output com o resultado> @ONLY)
-```
-
-- Exemplo:
-
-```cmake 
-configure_file(TutorialConfig.h.in TutorialConfig.h @ONLY) 
-```
-
-```
-TutorialConfig.h.in
-
-#cmakedefine Tutorial_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
-#cmakedefine Tutorial_VERSION_MINOR @Tutorial_VERSION_MINOR@
-```
-
-No output irá ser criado 2 macros no header file, com o nome específicado e com a substituição do valor da variável
-que está definida no CMakeLists.txt, e será inserido entre os `@`
-
-```
-TutorialConfig.h
-
-#define Tutorial_VERSION_MAJOR 1
-#define Tutorial_VERSION_MINOR 5
-```
-
----
-Especifica ao CMake para criar um executavel utilizando os arquivos de codigo fonte especificados
+Alguns exemplos de uso do operador de expansão com o comando `set()`:
 
 ```cmake
-add_executable(Tutorial tutorial.cxx)
+set(foo ab)                     # foo = "ab"
+set(bar ${foo}cd)               # bar = "abcd"
+set(baz ${foo} cd)              # baz = "ab;cd"
+set(minhaVar ba)                # minhaVar = "ba"
+set(grupo "${${MinhaVar}r}ef")  # grupo => "${bar}ef" => "abcdef"
+set(${foo} xyz)                 # ab = "xyz"
+set(bar ${naoExiste})           # bar = ""
 ```
 
----
-Esse comando especifica ao executável (target) onde buscar os arquivos de include
+String também podem ser usadas com multiplas linhas, tendo dois jeitos de faze-lo:
 
-```cmake 
-target_include_directories(Tutorial PUBLIC ${PROJECT_BINARY_DIR}) # 
+Com o simples enter para pular a linha e o CMake se encarrega do resto:
+
+```cmake
+
+set(amet "dolor amet")
+
+set(minhaVar "Lorem ipsum magum
+florium ${amet}, tambem posso dar scape em aspas com \"contra barra\"")
 ```
 
----
+Ou com caracteres delimitadores especiais do CMake, o `[[` para abrir e o `]]` para fechar
+
+```cmake
+set(multilinha [[
+Primeira linha
+Segunda Linha
+]])
+```
+
+Ou para utilizar string puro sem qualquer interpretação do CMake utilize `[=[` para abrir e `]=]` para fechar:
+
+```cmake
+set(shellScriptExemplo [=[
+#!/bin/bash
+
+[[ -n "${USER}" ]] && echo "Usuario existe"
+
+]=])
+```
+
+Para excluir uma variável utilize o comando `unset( <nome da variavel> )`
+
+O CMake também possibilita a utilização de variáveis de ambiente, utilizando a
+sintaxe: `$ENV{<nome da variavel especial>`, exemplo:
+
+```cmake
+set(pathDoAmbiente "$ENV{PATH}")
+```
+
+Vale ressaltar que modificar variáveis de ambiente no CMake apenas tem efeitos locais no runtime do CMake.
+
+Também é possível salvar o estado de variáveis no cache, utilizando a opção `CACHE`
+
+```cmake
+set(minhVar <VALOR>... CACHE <TIPO> "docstring" [FORCE])
+```
+
+Ao executar o comando acima, o CMake vai armazenar essa variável no `CMakeCache.txt`, dentro do diretório de build.
+Dessa forma, o valor dessa variável vai manter até ser sobrescrita ou removida do cache.
+
+As variáveis em cache se comporta como uma variável normal.
+
+As opções:
+
+`TIPO`: O tipo da variável pode ser:
+
+- `BOOL`: É uma variável booleana de on/off, por baixo dos panos é uma string que representa um booleano com texto
+  (ON/OFF ou TRUE/FALSE ou 1/0 e etc.)
+- `FILEPATH`: Uma variável que representa um caminho até um arquivo
+- `PATH`: Uma variável que representa um caminho até um diretório
+- `STRING`: Apenas uma string de texto
+- `INTERNAL`: Essa variável não é feita para ser interagida com o usuário, é mais usada para guardar dados internos do
+  projeto, como por exemplo um processamento demorado.
+
+A utilização de variáveis booleanas é tão recorrente que para ajudar na legibilidade do código, foi criada o comando
+`option`, que é utilizada em conjunto com o comando `set()`. E sua sintaxe é:
+
+`option(<nome Variavel> <string de ajuda> [valor inicial])`
+
+Exemplo:
+
+```cmake
+set(minhaVar CACHE BOOL)
+
+option(minhaVar "Ligar ou Desligar funcionalidade X" ON)
+```
+
+Caso queira manipular os valores do cache através da linha de comando, utilize:
+
+Para criar:
+`cmake -D myVar:tipo=valor ... `
+
+Para remover:
+`cmake -U nomedaVar -U *Var `
+
+Para as Versões gráficas do CMake, você pode criar algumas opções extras para as variáveis, como por exemplo marcar como
+avançado:
+
+```cmake
+mark_as_advanced([CLEAR|FORCE] var1 [var2...])
+```
+
+Para debugar variáveis e outras coisas, você poder dar print na tela utilizando o comando:
+
+```cmake
+message([mode] mensagem [msg2]...)
+```
+
+Os modos não são obrigatórios, se não for usado nenhum dos abaixos a mensagem vai ser printada normalmente.
+
+E os modos são:
+
+- `STATUS`: Usado para informar algo, as mensagens são precedidas por 2 hífens
+- `WARNING`: Usados para dar aviso, são destacadas em vermelho (se suportado), mas não aborta a execução
+- `AUTHOR_WARNING`: É igual o warning, mas só aparece se estiver habilitado com a opção `-Wdev`
+- `SEND_ERROR`: Usado para dar um erro, são destacadas em vermelho (se suportado), mas vai continuar o processamento até
+  o estágio de configuração for completado, mas não entra no estágio de geração
+- `FATAL_ERROR`: Usado para informar um erro, a mensagem vai ser destacada e irá abortar a execução, alem do log que vai
+  dizer a localização do erro.
+- `DEPRECATION`: Uma categoria especial para dar a mensagem de depreciação, se a variável `CMAKE_ERROR_DEPRECATED` for
+  verdadeira, então a mensagem será tratada como um erro. Se `CMAKE_WARN_DEPRECATED` for verdadeiro, a mensagem é
+  tratada como um waning. Se nenhumas estiverem habilidatas, a mensagem não irá ser exibida.
+
+Exemplo:
+
+```cmake
+set(myVar "Ola mundo")
+message("O valor da variavel myVar é: ${myVar}")
+```
+
+Outro mecanismo de debug de variáveis que o CMake disponibiliza é o comando `variable_watch()`. Normalmente é usada em
+projetos mais complexos onde é preciso entender como uma variável chegou a um valor em particular. Quando uma variável é
+seguida, todos as leituras e modificações são logadas.
+
+```cmake
+variable_watch(minhaVar [command])
+```
+
+Para um controle absoluto, você pode executar um callback toda vez que a variável for lida ou modificada passando uma
+função no argumento `[command]`, esse callback vai receber os seguintes argumentos: Nome da variável, tipo de acesso,
+valor da variável, o arquivo atual na stack e o stack de arquivos.
+
+Além disso, as variávels do tipo string podem ser modificadas ou lidas através de funções utilitárias:
+
+```cmake
+string(FIND ${varComString} subString varDeOutput [REVERSE])
+
+string(REPLACE matchString replaceWith outVar input [input...])
+
+string(REGEX MATCH regex outVar [input...])
+
+# E entre outros ......
+```
+
+Como foi falado anteriormente, CMake possui listas, e nada mais é que uma string separa por ponto e vírgula, mas você
+pode utilizar uma função que irá trata-los como uma lista:
+
+```cmake
+list(LENGTH listVar outVar)
+list(GET listVar index [index...] outVar)
+list(APPEND listVar item [item...]) # Insere no final
+list(INSERT listVar index item [item...]) # Insere no index
+list(FIND myList value outVar)
+list(REMOVE_ITEM myList value [value...])
+list(REMOVE_AT myList index [index...])
+list(REMOVE_DUPLICATES myList)
+
+# E entre outros ......
+```
+
+Além disso, pode fazer operações matemáticas:
+
+```cmake
+set(x 3)
+
+set(y 7)
+
+math(EXPR z "(${x}+${y}) / 2")
+
+message("result = ${z}")
+```
