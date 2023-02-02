@@ -35,7 +35,7 @@ Certifique-se de incluir os arquivos de cabeçalho "ContaBancaria.h", "ContaPoup
  no arquivo de implementação e no arquivo de programa principal para garantir que as classes estejam disponíveis para uso.
 */
 #include <iostream>
-#include "lib/banco.hpp"
+#include "include/banco/banco.hpp"
 
 using std::cout;
 
